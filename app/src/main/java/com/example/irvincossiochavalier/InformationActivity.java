@@ -1,7 +1,19 @@
 package com.example.irvincossiochavalier;
 
+import android.Manifest;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -9,11 +21,16 @@ import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class InformationActivity extends ComponentActivity {
+
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
 
     private ImageView btnBack;
     private EditText etPhoneNumber;
@@ -31,7 +48,6 @@ public class InformationActivity extends ComponentActivity {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootLayout), (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
 
-            // Add top padding to top bar for status bar safe area
             View topBar = findViewById(R.id.topBar);
             if (topBar != null) {
                 float density = getResources().getDisplayMetrics().density;
@@ -39,7 +55,6 @@ public class InformationActivity extends ComponentActivity {
                 topBar.setPadding(pad16, insets.top, pad16, 0);
             }
 
-            // Add bottom padding to white card container for navigation bar safe area
             View whiteCardContainer = findViewById(R.id.whiteCardContainer);
             if (whiteCardContainer != null) {
                 float density = getResources().getDisplayMetrics().density;
@@ -91,10 +106,74 @@ public class InformationActivity extends ComponentActivity {
                     }
                 }
 
-                Toast.makeText(InformationActivity.this,
-                        "Validacion exitosa",
-                        Toast.LENGTH_LONG).show();
+                checkAndHandleLocation();
             }
         });
+    }
+
+    private boolean isLocationPermissionGranted() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean isGpsEnabled() {
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) return false;
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+    }
+
+    private void checkAndHandleLocation() {
+        if (!isLocationPermissionGranted() || !isGpsEnabled()) {
+            showLocationModalDialog();
+        } else {
+            Toast.makeText(InformationActivity.this, "Validacion exitosa", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void showLocationModalDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_gps_location);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setGravity(Gravity.BOTTOM);
+        }
+
+        Button btnContinueLocation = dialog.findViewById(R.id.btnContinueLocation);
+        btnContinueLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+                if (!isLocationPermissionGranted()) {
+                    ActivityCompat.requestPermissions(InformationActivity.this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                            LOCATION_PERMISSION_REQUEST_CODE);
+                } else if (!isGpsEnabled()) {
+                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivity(intent);
+                }
+            }
+        });
+
+        dialog.show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (!isGpsEnabled()) {
+                    showLocationModalDialog();
+                } else {
+                    Toast.makeText(this, "Permiso de ubicación concedido", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(this, "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }
