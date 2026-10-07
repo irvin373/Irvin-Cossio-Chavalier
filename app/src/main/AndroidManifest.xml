@@ -28,6 +28,13 @@
         </activity>
 
         <activity
+            android:name=".AuthenticationActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.IrvinCossioChavalier"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="false"
             android:label="@string/app_name"

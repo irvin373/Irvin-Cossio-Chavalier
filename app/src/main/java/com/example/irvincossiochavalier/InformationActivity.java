@@ -127,8 +127,13 @@ public class InformationActivity extends ComponentActivity {
         if (!isLocationPermissionGranted() || !isGpsEnabled()) {
             showLocationModalDialog();
         } else {
-            Toast.makeText(InformationActivity.this, "Validacion exitosa", Toast.LENGTH_LONG).show();
+            navigateToAuthentication();
         }
+    }
+
+    private void navigateToAuthentication() {
+        Intent intent = new Intent(InformationActivity.this, AuthenticationActivity.class);
+        startActivity(intent);
     }
 
     private void showLocationModalDialog() {
@@ -154,6 +159,8 @@ public class InformationActivity extends ComponentActivity {
                 } else if (!isGpsEnabled()) {
                     Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                     startActivity(intent);
+                } else {
+                    navigateToAuthentication();
                 }
             }
         });
@@ -169,7 +176,7 @@ public class InformationActivity extends ComponentActivity {
                 if (!isGpsEnabled()) {
                     showLocationModalDialog();
                 } else {
-                    Toast.makeText(this, "Permiso de ubicación concedido", Toast.LENGTH_SHORT).show();
+                    navigateToAuthentication();
                 }
             } else {
                 Toast.makeText(this, "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show();
